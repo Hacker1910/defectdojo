@@ -51,6 +51,6 @@ jobs:
         -H 'Content-Type: multipart/form-data' \
         -F 'test=2' \
         -F '[email protected];type=application/json' \
-        -F file=@"results.sarif" \
+        -F file=@"npm_result.json" \
         -F 'scan_type=SARIF' \
         -F 'tags=test'
