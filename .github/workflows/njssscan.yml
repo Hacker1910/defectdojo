@@ -1,0 +1,58 @@
+name: njsscan
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  njsscan:
+    runs-on: ubuntu-latest
+    name: njsscan code scanning
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+    - name: nodejsscan scan
+      id: njsscan
+      uses: ajinabraham/njsscan-action@master
+      with:
+        args: '. --sarif --output results.sarif || true'
+    - name: Upload njsscan report
+      run : |
+        cat results.sarif
+        curl -X 'POST' \
+        'http://<your-instance-server-ip>:8080/api/v2/reimport-scan/' \
+        -H 'accept: application/json' \
+        -H 'Authorization: Token <your-instance-api-token>' \
+        -H 'Content-Type: multipart/form-data' \
+        -F 'test=<your-instance-test-id>' \
+        -F '[email protected];type=application/json' \
+        -F file=@"results.sarif" \
+        -F 'scan_type=SARIF' \
+        -F 'tags=test'
+
+  npmAudit:
+    runs-on: ubuntu-latest
+    name: npmAudit library scanning
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+    - name: npmAudit scan
+      run : |
+        curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+        npm install -g npm@6.14.18
+    - name: Upload npmAudit report
+      run : |
+        npm i --package-lock-only
+        npm audit --json >> npm_result.json | true
+        cat npm_result.json
+        curl -X 'POST' \
+        'http://<your-instance-server-ip>:8080/api/v2/reimport-scan/' \
+        -H 'accept: application/json' \
+        -H 'Authorization: Token <your-instance-api-token>' \
+        -H 'Content-Type: multipart/form-data' \
+        -F 'test=<your-instance-test-id>' \
+        -F '[email protected];type=application/json' \
+        -F file=@"npm_result.json" \
+        -F 'scan_type=NPM Audit Scan' \
+        -F 'tags=test'
